@@ -217,8 +217,6 @@ class IvmObjects:
                 self.inspect_steps[3] = dict(name = 'threshold_volume', data = v_dg_th) 
                 self.inspect_steps[4] = dict(name = 'labels_volume', data = v_labels) 
 
-
-
             #makes a dataframe with all coordinates
             df.columns=['x', 'y', 'z']
 
@@ -265,7 +263,6 @@ class IvmObjects:
                 df['c' + str(c) + '_mean']=ndi.measurements.mean(v_int, v_labels, labels_idx)
                 df['c' + str(c) + '_max']=ndi.measurements.maximum(v_int, v_labels, labels_idx)
                 
-        
         return df
 
 
