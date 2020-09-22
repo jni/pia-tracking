@@ -1,0 +1,9 @@
+__pycache__
+.ipynb_checkpoints
+
+# output
+202*
+log.txt
+
+# other untracked files
+untracked
