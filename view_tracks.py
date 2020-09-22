@@ -21,8 +21,21 @@ def get_nd2_vol(nd2_data, c, frame):
     return v
 
 
+def get_stack(data_path, object_channel=2, frame=70):
+    nd2_data = ND2Reader(data_path)
+    nd2vol = tz.curry(get_nd2_vol)
+    fram = get_nd2_vol(nd2_data, object_channel, frame)
+    arr = da.stack(
+        [da.from_delayed(delayed(nd2vol(nd2_data, 2))(i),
+         shape=fram.shape,
+         dtype=fram.dtype)
+         for  i in range(193)]
+    )
+    return arr
+
+
 def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
-        coord_cols=['x', 'y', 'z'], log=False, scale=(1, 1, 1)):
+        coord_cols=('x', 'y', 'z'), log=False, scale=(1, 1, 1)):
     time_0 = time.time()
     num_cols = len(coord_cols) + 1
     track_ids = df[id_col].unique()
@@ -64,27 +77,18 @@ if __name__ == '__main__':
     # Image Data
     # ----------
     data_path = (
-        '/Users/jni/Dropbox/share-files/200519_IVMTR69_Inj4_dmso_exp3.nd2'
+        '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2'
     )
-    nd2_data = ND2Reader(data_path)
-    object_channel = 2
-    nd2vol = tz.curry(get_nd2_vol)
-    fram = get_nd2_vol(nd2_data, object_channel, 70)
-    arr = da.stack(
-        [da.from_delayed(delayed(nd2vol(nd2_data, 2))(i),
-         shape=fram.shape,
-         dtype=fram.dtype)
-         for  i in range(193)]
-    )
+    arr = get_stack(data_path)
 
 
     # Tracks data
     # -----------
-    path = '/Users/jni/Dropbox/share-files/tracks.csv'
+    path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
     df = pd.read_csv(path)
     tracks = get_tracks(df, scale=[1, 1, 4])
-    # save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
-    # save_tracks(tracks, save_path)
+    save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
+    save_tracks(tracks, save_path)
 
 
     # Visualise image and tracks
