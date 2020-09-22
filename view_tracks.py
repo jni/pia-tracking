@@ -21,7 +21,8 @@ def get_nd2_vol(nd2_data, c, frame):
     return v
 
 
-def get_tracks(df, min_frames=20, id_col='particle', time_col='frame', coord_cols=['x', 'y', 'z'], log=False):
+def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
+        coord_cols=['x', 'y', 'z'], log=False, scale=(1, 1, 1)):
     time_0 = time.time()
     num_cols = len(coord_cols) + 1
     track_ids = df[id_col].unique()
@@ -35,7 +36,7 @@ def get_tracks(df, min_frames=20, id_col='particle', time_col='frame', coord_col
             t = np.array(id_df[time_col].values).T
             track[:, 0] = t
             for i, col in enumerate(coord_cols):
-                coord = np.array(id_df[col].values).T
+                coord = np.array(id_df[col].values).T * scale[i]
                 track[:, i + 1] = coord
             tracks.append(track)
             t1 = time.time()
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     # -----------
     path = '/Users/jni/Dropbox/share-files/tracks.csv'
     df = pd.read_csv(path)
-    tracks = get_tracks(df)
+    tracks = get_tracks(df, scale=[1, 1, 4])
     # save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
     # save_tracks(tracks, save_path)
 
