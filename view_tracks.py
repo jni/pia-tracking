@@ -76,19 +76,21 @@ def save_tracks(tracks, name='tracks-for-napari.txt'):
 if __name__ == '__main__':
     # Image Data
     # ----------
-    data_path = (
-        '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2'
+    data_path = ( 
+        # '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2'
+        '/Users/jni/Dropbox/share-files/200519_IVMTR69_Inj4_dmso_exp3.nd2'
     )
     arr = get_stack(data_path)
 
 
     # Tracks data
     # -----------
-    path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
+    path = '/Users/jni/Dropbox/share-files/tracks.csv'
+    #'/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
     df = pd.read_csv(path)
     tracks = get_tracks(df, scale=[1, 1, 4])
-    save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
-    save_tracks(tracks, save_path)
+    # save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
+    # save_tracks(tracks, save_path)
 
 
     # Visualise image and tracks
