@@ -1,11 +1,31 @@
+import argparse
 import fl
 import importlib
-import matplotlib.pyplot as plt
 import napari
-import numpy as np
-import pandas as pd
-from pathlib import Path
-import seaborn as sns
+
+
+# Parse args
+# ---------
+parser = argparse.ArgumentParser()
+parser.add_argument("image", help="Input path to image data")
+parser.add_argument("-n", "--name", help="Input path to tracks data")
+args = parser.parse_args()
+if args.name == "Abi":
+    data_path = ( 
+    '/Users/amcg0011/Data/pia-tracking'
+    )
+
+elif args.name == "Juan":
+    data_path = ( 
+    '/Users/jni/Dropbox/share-files' # this won't work if the file isn't the first nd2 :) 
+    )
+    # elif:
+    #     data_path = 
+    #     tracks_path = 
+    # INSERT ANY OTHER SHORTCUTS :)
+else:
+    data_path = args.image
+
 
 # Segmentation workflow
 # ---------------------
