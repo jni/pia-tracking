@@ -1,5 +1,6 @@
 # based on https://gist.github.com/AbigailMcGovern/3ec44eb509d4c8740248e1322f0e33d1
 # needs https://github.com/napari/napari/pull/1361
+import argparse
 from dask import delayed
 import dask.array as da
 import napari
@@ -74,21 +75,51 @@ def save_tracks(tracks, name='tracks-for-napari.txt'):
 
 
 if __name__ == '__main__':
-    # Image Data
-    # ----------
-    data_path = ( 
-        # '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2'
+    # Argparse
+    # --------
+    parser = argparse.ArgumentParser()
+    parser.add_argument("image", help="Input path to image data")
+    parser.add_argument("tracks", help="Input path to tracks data")
+    parser.add_argument("-n", "--name", help="Input path to tracks data")
+    h0 = "Minimum frames in which particles must appear to be "
+    h1 = "visualised as tracks (default = 20)"
+    h = h0 + h1
+    parser.add_argument("--min_frames", help=h, type=int, default=20)
+    
+    # Get Arguments
+    # -------------
+    args = parser.parse_args()
+    if args.name == "Abi":
+        data_path = ( 
+        '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2'
+        )
+        tracks_path = (
+            '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
+        )
+    elif args.name == "Juan":
+        data_path = ( 
         '/Users/jni/Dropbox/share-files/200519_IVMTR69_Inj4_dmso_exp3.nd2'
-    )
+        )
+        tracks_path = (
+            '/Users/jni/Dropbox/share-files/tracks.csv'
+        )
+    # elif:
+    #     data_path = 
+    #     tracks_path = 
+    # INSERT ANY OTHER SHORTCUTS :)
+    else:
+        data_path = args.image
+        tracks_path = args.tracks
+
+    # Get Data
+    # --------
     arr = get_stack(data_path)
+    df = pd.read_csv(tracks_path)
+    if args.min_frames:
+        tracks = get_tracks(df, scale=[1, 1, 4], min_frames=args.min_frames)
+    else:
+        tracks = get_tracks(df, scale=[1, 1, 4])
 
-
-    # Tracks data
-    # -----------
-    path = '/Users/jni/Dropbox/share-files/tracks.csv'
-    #'/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
-    df = pd.read_csv(path)
-    tracks = get_tracks(df, scale=[1, 1, 4])
     # save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
     # save_tracks(tracks, save_path)
 
