@@ -1,28 +1,15 @@
-import argparse
 import fl
 import importlib
 import napari
+from parser import custom_parser, hardcoded_paths
 
 
 # Parse args
 # ---------
-parser = argparse.ArgumentParser()
-parser.add_argument("image", help="Input path to image data")
-parser.add_argument("-n", "--name", help="Input path to tracks data")
+parser = custom_parser()
 args = parser.parse_args()
-if args.name == "Abi":
-    data_path = ( 
-    '/Users/amcg0011/Data/pia-tracking'
-    )
-
-elif args.name == "Juan":
-    data_path = ( 
-    '/Users/jni/Dropbox/share-files' # this won't work if the file isn't the first nd2 :) 
-    )
-    # elif:
-    #     data_path = 
-    #     tracks_path = 
-    # INSERT ANY OTHER SHORTCUTS :)
+if args.name:
+    data_path = hardcoded_paths(args.name, __file__)['data_path']
 else:
     data_path = args.image
 
@@ -31,7 +18,6 @@ else:
 # ---------------------
 # single frame segmentation from 1(4)_Process_images.ipynb 
 importlib.reload(fl)
-data_path = '/Users/amcg0011/Data/pia-tracking'
 df_files= fl.nd2_info_to_df(data_path)
 conf = dict(
             process_type = 'single_thread', # USE ONLY 'single_thread' for inspection
