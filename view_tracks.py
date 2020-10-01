@@ -42,31 +42,17 @@ def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
     use with recent commits to the tracks PR (ID + data)
     """
     time_0 = time.time()
-    num_cols = len(coord_cols) + 1
-    track_ids = df[id_col].unique()
-    tracks = []
-    for id_ in track_ids:
-        t0 = time.time()
-        id_df = df[df[id_col]==id_]
-        frames = len(id_df)
-        if frames >= min_frames:
-            track = np.zeros((frames, num_cols), dtype=np.float)
-            t = np.array(id_df[time_col].values).T
-            track[:, 0] = t
-            for i, col in enumerate(coord_cols):
-                coord = np.array(id_df[col].values).T * scale[i]
-                track[:, i + 1] = coord
-            tracks.append(track)
-            t1 = time.time()
-            if log:
-                with open('log.txt', 'a+') as file_:
-                    file_.write(f'Particle: {id_}, frames: {frames}, in {t1-t0} seconds\n')
-    time_ = time.time() - time_0
-    print(f'{len(tracks)} tracks found in {time_} seconds')
-    if log:
-        with open('log.txt', 'a+') as file_:
-                file_.write(f'Total tracks: {len(tracks)}, Total time: {time_} seconds\n')
-    return tracks
+    num_cols = len(coord_cols) + 2
+    id_array = df[id_col].to_numpy()
+    track_count = np.bincount(id_array)
+    df['track length'] = track_count[id_array]
+    df_filtered = df.loc[df['track length'] >= min_frames, :]
+    data_cols = [id_col, time_col] + coord_cols
+    track_data = df_filtered[data_cols].to_numpy()
+    track_data[:, -3:] *= scale
+    print(f'{np.sum(track_count >= min_frames)} tracks found in '
+          f'{time.time() - time_0} seconds')
+    return track_data, dict(df_filtered)
 
 
 def save_tracks(tracks, name='tracks-for-napari.txt'):
@@ -127,4 +113,9 @@ if __name__ == '__main__':
     with napari.gui_qt():
         viewer = napari.Viewer()
         viewer.add_image(arr, scale=[1, 1, 1, 4])
-        viewer.add_tracks(tracks) #, scale=[1, 1, 1, 4])
+        viewer.add_tracks(
+            tracks,
+            properties=properties,
+            color_by='particle',
+            colormap='viridis',
+        )
