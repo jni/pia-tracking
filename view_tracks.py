@@ -7,6 +7,7 @@ from nd2reader import ND2Reader
 import numpy as np
 import os
 import pandas as pd
+from parser import custom_parser, hardcoded_paths
 import time
 import toolz as tz
 
@@ -36,6 +37,10 @@ def get_stack(data_path, object_channel=2, frame=70):
 
 def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
         coord_cols=('x', 'y', 'z'), log=False, scale=(1, 1, 1)):
+    """
+    Get the tracks for napari tracks. Will need to be updated before 
+    use with recent commits to the tracks PR (ID + data)
+    """
     time_0 = time.time()
     num_cols = len(coord_cols) + 1
     track_ids = df[id_col].unique()
@@ -65,6 +70,10 @@ def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
 
 
 def save_tracks(tracks, name='tracks-for-napari.txt'):
+    '''
+    For saving tracks in old napari tracks format
+    Not useful once changed to ID + data
+    '''
     output = []
     for track in tracks:
         ls = track.tolist()
@@ -74,21 +83,41 @@ def save_tracks(tracks, name='tracks-for-napari.txt'):
 
 
 if __name__ == '__main__':
-    # Image Data
-    # ----------
-    data_path = ( 
-        # '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2'
-        '/Users/jni/Dropbox/share-files/200519_IVMTR69_Inj4_dmso_exp3.nd2'
-    )
-    arr = get_stack(data_path)
+    # Construct Parser
+    # ----------------
+    # construct dict with information for command line argument to 
+    # interact with min_frames in get_tracks
+    h0 = "Minimum frames in which particles must appear to be "
+    h1 = "visualised as tracks (default = 20)"
+    base = {
+        'min_frames' : {
+            'name' :'--min_frames',
+            'help' : h0 + h1, 
+            'type' : int, 
+            'default' : 20
+        }
+    }
+    parser = custom_parser(tracks=True, base=base)
+    args = parser.parse_args()
 
+    # Sortcuts or No
+    # --------------
+    if args.name:
+        paths = hardcoded_paths(args.name, __file__)
+    else:
+        paths = {
+            'data_path' : args.image, 
+            'tracks_path' : args.tracks
+        }
 
-    # Tracks data
-    # -----------
-    path = '/Users/jni/Dropbox/share-files/tracks.csv'
-    #'/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
-    df = pd.read_csv(path)
-    tracks = get_tracks(df, scale=[1, 1, 4])
+    # Get Data
+    # --------
+    arr = get_stack(paths['data_path'])
+    df = pd.read_csv(paths['tracks_path'])
+    if args.min_frames:
+        tracks = get_tracks(df, scale=[1, 1, 4], min_frames=args.min_frames)
+    else:
+        tracks = get_tracks(df, scale=[1, 1, 4])
     # save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
     # save_tracks(tracks, save_path)
 

@@ -1,17 +1,23 @@
 import fl
 import importlib
-import matplotlib.pyplot as plt
 import napari
-import numpy as np
-import pandas as pd
-from pathlib import Path
-import seaborn as sns
+from parser import custom_parser, hardcoded_paths
+
+
+# Parse args
+# ---------
+parser = custom_parser()
+args = parser.parse_args()
+if args.name:
+    data_path = hardcoded_paths(args.name, __file__)['data_path']
+else:
+    data_path = args.image
+
 
 # Segmentation workflow
 # ---------------------
 # single frame segmentation from 1(4)_Process_images.ipynb 
 importlib.reload(fl)
-data_path = '/Users/amcg0011/Data/pia-tracking'
 df_files= fl.nd2_info_to_df(data_path)
 conf = dict(
             process_type = 'single_thread', # USE ONLY 'single_thread' for inspection
