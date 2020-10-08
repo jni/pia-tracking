@@ -22,7 +22,7 @@ def get_nd2_vol(nd2_data, c, frame):
     return v
 
 
-def get_stack(data_path, object_channel=2, frame=70):
+def get_stack(data_path, object_channel=2, frame=70, t_max=193, w_shape=False):
     nd2_data = ND2Reader(data_path)
     nd2vol = tz.curry(get_nd2_vol)
     fram = get_nd2_vol(nd2_data, object_channel, frame)
@@ -30,9 +30,14 @@ def get_stack(data_path, object_channel=2, frame=70):
         [da.from_delayed(delayed(nd2vol(nd2_data, 2))(i),
          shape=fram.shape,
          dtype=fram.dtype)
-         for  i in range(193)]
+         for  i in range(t_max)]
     )
-    return arr
+    shape = [t_max, ]
+    shape[1:] = fram.shape
+    if w_shape:
+        return arr, shape
+    else:
+        return arr
 
 
 def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
@@ -91,6 +96,17 @@ def save_tracks(tracks, name='tracks-for-napari.csv'):
     np.savetxt(name, tracks, delimiter=',')
 
 
+def shortcuts_or_no(args_):
+    if args_.name:
+        paths = hardcoded_paths(args_.name, __file__)
+    else:
+        paths = {
+            'data_path' : args_.image, 
+            'tracks_path' : args_.tracks
+        }
+    return paths
+
+
 if __name__ == '__main__':
     # Construct Parser
     # ----------------
@@ -107,25 +123,17 @@ if __name__ == '__main__':
         }
     }
     parser = custom_parser(tracks=True, base=base)
-    args = parser.parse_args()
-
-    # Sortcuts or No
-    # --------------
-    if args.name:
-        paths = hardcoded_paths(args.name, __file__)
-    else:
-        paths = {
-            'data_path' : args.image, 
-            'tracks_path' : args.tracks
-        }
+    args_ = parser.parse_args()
+    paths = shortcuts_or_no(args_)
 
     # Get Data
     # --------
     arr = get_stack(paths['data_path'])
     df = pd.read_csv(paths['tracks_path'])
-    if args.min_frames: 
+    if args_.min_frames: # this if else block is actually unneccessary, 
+        # apparently I deeply distrust argparse's default =P
         tracks, properties = get_tracks(df, scale=[1, 1, 4], 
-                                        min_frames=args.min_frames)
+                                        min_frames=args_.min_frames)
     else:
         tracks, properties = get_tracks(df, scale=[1, 1, 4])
     # save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
