@@ -3,7 +3,7 @@
     {
       "MotionModel":
         {
-          "name": "cell_motion",
+          "name": "platelet_motion",
           "dt": 1.0,
           "measurements": 3,
           "states": 6,
@@ -48,7 +48,7 @@
         {},
       "HypothesisModel":
         {
-          "name": "cell_hypothesis",
+          "name": "platelet_hypothesis",
           "hypotheses": ["P_FP", "P_init", "P_term", "P_link", "P_dead"],
           "lambda_time": 5.0,
           "lambda_dist": 3.0,

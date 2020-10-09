@@ -96,7 +96,8 @@ shortcuts = {
         }, 
         'view_segmentation_3D' : {
             'data_path' : '/Users/amcg0011/Data/pia-tracking'
-        }
+        }, 
+        'btrack_tracking' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv"
     },
     'Juan' : {
         'view_tracks' : {
@@ -112,7 +113,7 @@ shortcuts = {
 __file__var = str
 
 def hardcoded_paths(name: str, file_: __file__var, shortcuts=shortcuts
-                    ) -> dict:
+                    ) -> Union[dict, str]:
     """
     get the variables for 
     """

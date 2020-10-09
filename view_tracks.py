@@ -41,7 +41,7 @@ def get_stack(data_path, object_channel=2, frame=70, t_max=193, w_shape=False):
 
 
 def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
-        coord_cols=('x', 'y', 'z'), scale=(1, 1, 1)):
+        coord_cols=('x', 'y', 'z'), scale=(1, 1, 1), w_prop=True):
     """
     Get the tracks from pandas.DataFrame containing object ID, 
     time, and coordinates for viewing in napari. Filters tracks
@@ -86,7 +86,10 @@ def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
     track_data[:, -3:] *= scale
     print(f'{np.sum(track_count >= min_frames)} tracks found in '
           f'{time.time() - time_0} seconds')
-    return track_data, dict(df_filtered)
+    if w_prop:
+        return track_data, dict(df_filtered)
+    else:
+        return track_data
 
 
 def save_tracks(tracks, name='tracks-for-napari.csv'):
@@ -106,22 +109,24 @@ def shortcuts_or_no(args_):
         }
     return paths
 
-
-if __name__ == '__main__':
-    # Construct Parser
-    # ----------------
-    # construct dict with information for command line argument to 
-    # interact with min_frames in get_tracks
-    h0 = "Minimum frames in which particles must appear to be "
-    h1 = "visualised as tracks (default = 20)"
-    base = {
+# construct dict with information for command line argument to 
+# interact with min_frames in get_tracks
+h0 = "Minimum frames in which particles must appear to be "
+h1 = "visualised as tracks (default = 20)"
+base = {
         'min_frames' : {
             'name' :'--min_frames',
             'help' : h0 + h1, 
             'type' : int, 
             'default' : 20
         }
-    }
+}
+
+if __name__ == '__main__':
+    # Construct Parser
+    # ----------------
+    # construct dict with information for command line argument to 
+    # interact with min_frames in get_tracks
     parser = custom_parser(tracks=True, base=base)
     args_ = parser.parse_args()
     paths = shortcuts_or_no(args_)
