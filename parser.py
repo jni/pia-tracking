@@ -6,7 +6,9 @@ from typing import Dict, Union
 
 def custom_parser(image: bool=True, 
                tracks: bool=False, 
-               name: bool=True, 
+               coords: bool=False,
+               name: bool=True,
+               save: bool=False, 
                base: dict={} ) -> argparse.ArgumentParser:
     """
     Get an argument parser with some common arguments and, if you like, 
@@ -23,7 +25,12 @@ def custom_parser(image: bool=True,
     ------
     parser: argparse.ArgumentParser
     """
-    parser_info = parser_dict(image=image, tracks=tracks, name=name, base=base)
+    parser_info = parser_dict(image=image, 
+                              tracks=tracks, 
+                              name=name, 
+                              coords=coords, 
+                              save=save,
+                              base=base)
     parser = get_parser(parser_info)
     return parser
 
@@ -52,7 +59,9 @@ def get_parser(parsing_info: Dict[Union[str], dict]
 
 def parser_dict(image: bool=True, 
                tracks: bool=False, 
+               coords: bool=False,
                name: bool=True, 
+               save: bool=False,
                base: dict={} ) -> Dict[Union[str], dict]:
     """
     Produce a dictionary with parser information. Can be provided with a base
@@ -82,6 +91,20 @@ def parser_dict(image: bool=True,
         h = 'name of user for custom hardcoded path/s'
         parser_info[arg] = {'name': name, 
                             'help': h}
+    if coords:
+        arg = 'coords'
+        name = ['-c', '--coords']
+        h = "Input path to platelet coordinates data"
+        parser_info[arg] = {'name': name, 
+                            'help': h}
+
+    if save:
+        arg = 'save'
+        name = ['-s','--save']
+        default = 'btrack_tracks.csv'
+        parser_info[arg] = {'name': name, 
+                            'help': h, 
+                            'default': default}
     return parser_info
 
 
@@ -96,7 +119,12 @@ shortcuts = {
         }, 
         'view_segmentation_3D' : {
             'data_path' : '/Users/amcg0011/Data/pia-tracking'
-        }
+        }, 
+        'btrack_tracking' : {
+            'save_path' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv", 
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
+            'coords_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
+            }
     },
     'Juan' : {
         'view_tracks' : {
@@ -112,7 +140,7 @@ shortcuts = {
 __file__var = str
 
 def hardcoded_paths(name: str, file_: __file__var, shortcuts=shortcuts
-                    ) -> dict:
+                    ) -> Union[dict, str]:
     """
     get the variables for 
     """

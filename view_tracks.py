@@ -22,7 +22,7 @@ def get_nd2_vol(nd2_data, c, frame):
     return v
 
 
-def get_stack(data_path, object_channel=2, frame=70):
+def get_stack(data_path, object_channel=2, frame=70, t_max=193, w_shape=False):
     nd2_data = ND2Reader(data_path)
     nd2vol = tz.curry(get_nd2_vol)
     fram = get_nd2_vol(nd2_data, object_channel, frame)
@@ -30,13 +30,18 @@ def get_stack(data_path, object_channel=2, frame=70):
         [da.from_delayed(delayed(nd2vol(nd2_data, 2))(i),
          shape=fram.shape,
          dtype=fram.dtype)
-         for  i in range(193)]
+         for  i in range(t_max)]
     )
-    return arr
+    shape = [t_max, ]
+    shape[1:] = fram.shape
+    if w_shape:
+        return arr, shape
+    else:
+        return arr
 
 
 def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
-        coord_cols=('x', 'y', 'z'), scale=(1, 1, 1)):
+        coord_cols=('x', 'y', 'z'), scale=(1, 1, 1), w_prop=True):
     """
     Get the tracks from pandas.DataFrame containing object ID, 
     time, and coordinates for viewing in napari. Filters tracks
@@ -81,7 +86,10 @@ def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
     track_data[:, -3:] *= scale
     print(f'{np.sum(track_count >= min_frames)} tracks found in '
           f'{time.time() - time_0} seconds')
-    return track_data, dict(df_filtered)
+    if w_prop:
+        return track_data, dict(df_filtered)
+    else:
+        return track_data
 
 
 def save_tracks(tracks, name='tracks-for-napari.csv'):
@@ -91,41 +99,51 @@ def save_tracks(tracks, name='tracks-for-napari.csv'):
     np.savetxt(name, tracks, delimiter=',')
 
 
-if __name__ == '__main__':
-    # Construct Parser
-    # ----------------
-    # construct dict with information for command line argument to 
-    # interact with min_frames in get_tracks
-    h0 = "Minimum frames in which particles must appear to be "
-    h1 = "visualised as tracks (default = 20)"
-    base = {
+def get_paths(
+              args,
+              __file, 
+              get={'data_path' : 'image', 
+                  'tracks_path' : 'tracks'}
+                  ):
+    if args.name:
+        paths = hardcoded_paths(args.name, __file)
+    else:
+        args_ = vars(args)
+        paths = {
+            key : args_[get[key]] for key in get.keys
+        }
+    return paths
+
+# construct dict with information for command line argument to 
+# interact with min_frames in get_tracks
+h0 = "Minimum frames in which particles must appear to be "
+h1 = "visualised as tracks (default = 20)"
+base = {
         'min_frames' : {
             'name' :'--min_frames',
             'help' : h0 + h1, 
             'type' : int, 
             'default' : 20
         }
-    }
-    parser = custom_parser(tracks=True, base=base)
-    args = parser.parse_args()
+}
 
-    # Sortcuts or No
-    # --------------
-    if args.name:
-        paths = hardcoded_paths(args.name, __file__)
-    else:
-        paths = {
-            'data_path' : args.image, 
-            'tracks_path' : args.tracks
-        }
+if __name__ == '__main__':
+    # Construct Parser
+    # ----------------
+    # construct dict with information for command line argument to 
+    # interact with min_frames in get_tracks
+    parser = custom_parser(tracks=True, base=base)
+    args_ = parser.parse_args()
+    paths = get_paths(args_)
 
     # Get Data
     # --------
     arr = get_stack(paths['data_path'])
     df = pd.read_csv(paths['tracks_path'])
-    if args.min_frames: 
+    if args_.min_frames: # this if else block is actually unneccessary, 
+        # apparently I deeply distrust argparse's default =P
         tracks, properties = get_tracks(df, scale=[1, 1, 4], 
-                                        min_frames=args.min_frames)
+                                        min_frames=args_.min_frames)
     else:
         tracks, properties = get_tracks(df, scale=[1, 1, 4])
     # save_path = '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks-for-napari.txt'
