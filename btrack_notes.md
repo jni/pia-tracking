@@ -136,5 +136,10 @@ But also:
 // ['P_FP','P_init','P_term','P_link','P_branch','P_dead','P_merge']
 ```
 
+`"lambda_link"`: the hypothesis engine uses a linking penalty, which defaults to `link_penalty = 1.0` unless `DISALLOW_METAPHASE_ANAPHASE_LINKING = true` or `DISALLOW_PROMETAPHASE_ANAPHASE_LINKING = true`. These are used when cells are known to be cycling and mitosis stage is a known variable. which is scaled by the `lambda_link` parameter as follows:
+```C++
+return std::exp(-(d*link_penalty)/m_params.lambda_link)
+```
+
 My `btrack` deep dive only got this far :).  
 
