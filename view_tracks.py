@@ -99,13 +99,18 @@ def save_tracks(tracks, name='tracks-for-napari.csv'):
     np.savetxt(name, tracks, delimiter=',')
 
 
-def shortcuts_or_no(args_):
-    if args_.name:
-        paths = hardcoded_paths(args_.name, __file__)
+def get_paths(
+              args,
+              __file, 
+              get={'data_path' : 'image', 
+                  'tracks_path' : 'tracks'}
+                  ):
+    if args.name:
+        paths = hardcoded_paths(args.name, __file)
     else:
+        args_ = vars(args)
         paths = {
-            'data_path' : args_.image, 
-            'tracks_path' : args_.tracks
+            key : args_[get[key]] for key in get.keys
         }
     return paths
 
@@ -129,7 +134,7 @@ if __name__ == '__main__':
     # interact with min_frames in get_tracks
     parser = custom_parser(tracks=True, base=base)
     args_ = parser.parse_args()
-    paths = shortcuts_or_no(args_)
+    paths = get_paths(args_)
 
     # Get Data
     # --------
