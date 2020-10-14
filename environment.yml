@@ -14,6 +14,8 @@ dependencies:
   - ipython
   - jupyter
   - jupyterlab
+  - cython
+  - opencv
 # btrack
   - python=3.7
   - pip
@@ -24,6 +26,6 @@ dependencies:
   - scipy>=1.3.1
   - pip:
     - btrack
-    - opencv-python
+    # - opencv-python
 
   
