@@ -16,6 +16,7 @@ dependencies:
   - jupyterlab
   - cython
   - opencv
+  - zarr
 # btrack
   - python=3.7
   - pip
