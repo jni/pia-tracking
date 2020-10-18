@@ -9,6 +9,7 @@ shell="${CONDA_BASE}/etc/profile.d/conda.sh"
 source $shell
 conda activate platelet-tracking
 # install development version of napari
+pip install -r requirements.txt
 git clone https://github.com/napari/napari.git
 cd napari
 pip install -e .[all]
