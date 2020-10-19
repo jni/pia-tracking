@@ -17,3 +17,21 @@ Goals:
 - use zarr to save the original data and intermediate products
 - use dask for processing where possible
 - get the tracks into the napari tracks layer from napari/napari#1361
+
+---
+Installation:
+```bash
+# first navigate to the location at which you wish to install
+# then: 
+git clone https://github.com/jni/pia-tracking.git
+cd ./pia-tracking
+bash install.sh
+conda activate platelet-tracking
+```
+
+Removal
+```bash
+# with pia-tracking as the working directory
+conda deactivate
+bash uninstall.sh
+```
