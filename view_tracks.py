@@ -102,8 +102,10 @@ def save_tracks(tracks, name='tracks-for-napari.csv'):
 def get_paths(
               args,
               __file, 
-              get={'data_path' : 'image', 
-                  'tracks_path' : 'tracks'}
+              get={
+                  'data_path': 'image', 
+                  'tracks_path': 'tracks'
+              }
                   ):
     if args.name:
         paths = hardcoded_paths(args.name, __file)
@@ -134,7 +136,7 @@ if __name__ == '__main__':
     # interact with min_frames in get_tracks
     parser = custom_parser(tracks=True, base=base)
     args_ = parser.parse_args()
-    paths = get_paths(args_)
+    paths = get_paths(args_, __file__)
 
     # Get Data
     # --------

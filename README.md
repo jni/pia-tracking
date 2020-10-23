@@ -17,3 +17,12 @@ Goals:
 - use zarr to save the original data and intermediate products
 - use dask for processing where possible
 - get the tracks into the napari tracks layer from napari/napari#1361
+
+---
+Installation:
+```bash
+git clone https://github.com/jni/pia-tracking.git
+cd pia-tracking
+conda env create -f environment.yml
+conda activate platelet-tracking
+```
