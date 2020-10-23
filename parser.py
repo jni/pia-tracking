@@ -124,7 +124,13 @@ shortcuts = {
             'save_path' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv", 
             'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
             'coords_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
-            }
+        },
+        'random_tracks_engine' : {
+            'save_dir' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313", 
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
+            'tracks_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv'
+        }
+        
     },
     'Juan' : {
         'view_tracks' : {
