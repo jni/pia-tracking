@@ -145,14 +145,37 @@ shortcuts = {
 
 __file__var = str
 
-def hardcoded_paths(name: str, file_: __file__var, shortcuts=shortcuts
+def hardcoded_paths(name: str, file_: __file__var, by_name=False, shortcuts=shortcuts
                     ) -> Union[dict, str]:
     """
     get the variables for 
     """
-    file_path = os.path.realpath(file_)
-    file_name = str(Path(file_path).stem)
-    values = shortcuts[name].get(file_name)
+    if not by_name:
+        file_path = os.path.realpath(file_)
+        file_name = str(Path(file_path).stem)
+        values = shortcuts[name].get(file_name)
+    else:
+        values = shortcuts[name].get(file_)
     return values
+
+
+# Utilities
+# ---------
+
+def get_paths(
+              args,
+              file_, 
+              get={'data_path' : 'image', 
+                  'tracks_path' : 'tracks'}, 
+              by_name=False
+                  ):
+    if args.name:
+        paths = hardcoded_paths(args.name, file_, by_name=by_name)
+    else:
+        args_ = vars(args)
+        paths = {
+            key : args_[get[key]] for key in get.keys
+        }
+    return paths
 
     

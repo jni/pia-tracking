@@ -7,7 +7,7 @@ from nd2reader import ND2Reader
 import numpy as np
 import os
 import pandas as pd
-from parser import custom_parser, hardcoded_paths
+from parser import custom_parser, get_paths
 import time
 import toolz as tz
 
@@ -99,21 +99,6 @@ def save_tracks(tracks, name='tracks-for-napari.csv'):
     np.savetxt(name, tracks, delimiter=',')
 
 
-def get_paths(
-              args,
-              __file, 
-              get={'data_path' : 'image', 
-                  'tracks_path' : 'tracks'}
-                  ):
-    if args.name:
-        paths = hardcoded_paths(args.name, __file)
-    else:
-        args_ = vars(args)
-        paths = {
-            key : args_[get[key]] for key in get.keys
-        }
-    return paths
-
 # construct dict with information for command line argument to 
 # interact with min_frames in get_tracks
 h0 = "Minimum frames in which particles must appear to be "
@@ -134,7 +119,7 @@ if __name__ == '__main__':
     # interact with min_frames in get_tracks
     parser = custom_parser(tracks=True, base=base)
     args_ = parser.parse_args()
-    paths = get_paths(args_)
+    paths = get_paths(args_, __file__)
 
     # Get Data
     # --------

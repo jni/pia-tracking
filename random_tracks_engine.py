@@ -474,10 +474,22 @@ class RandomTracksEngine:
 # Functions
 # ---------
 
+# The Wrapper 
+# -----------
+def get_random_tracks(paths, prefix, n=10, t_max=193):
+    df, array, shape = read_data(paths, t_max=t_max)
+    RTE = RandomTracksEngine(df, array, shape)
+    hcs, tracks = RTE.add_tracks(n)
+    print(type(tracks), len(tracks))
+    RTE.save(prefix, paths['save_dir'])
+    return hcs, tracks, RTE.tracks_info
+
+
 # Data IO
 # -------
 def read_data(paths, t_max=193):
-    df = pd.read_csv(paths['tracks_path'], index_col=0)
+    df = pd.read_csv(paths['tracks_path'])
+    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     arr, shape = get_stack(paths['data_path'], t_max=t_max, w_shape=True)
     return df, arr, shape
 
