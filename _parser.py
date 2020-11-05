@@ -108,13 +108,26 @@ def parser_dict(image: bool=True,
     return parser_info
 
 
+# Specific Base Options
+# ---------------------
+h0 = "Minimum frames in which particles must appear to be "
+h1 = "visualised as tracks (default = 20)"
+track_view_base = {
+        'min_frames' : {
+            'name' :'--min_frames',
+            'help' : h0 + h1, 
+            'type' : int, 
+            'default' : 20
+        }
+}
+
 # Hacky Hardcoded Paths
 # ---------------------
 
 shortcuts = {
     'Abi' : {
         'view_tracks' : {
-            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.zarr',
             'tracks_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
         }, 
         'view_segmentation_3D' : {
@@ -122,13 +135,14 @@ shortcuts = {
         }, 
         'btrack_tracking' : {
             'save_path' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv", 
-            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.zarr',
             'coords_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
         },
         'random_tracks_engine' : {
             'save_dir' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313", 
-            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
-            'tracks_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv'
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.zarr',
+            'tracks_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv', 
+            'coords_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
         }
         
     },
@@ -154,8 +168,10 @@ def hardcoded_paths(name: str, file_: __file__var, by_name=False, shortcuts=shor
         file_path = os.path.realpath(file_)
         file_name = str(Path(file_path).stem)
         values = shortcuts[name].get(file_name)
-    else:
+    elif isinstance(file_, str):
         values = shortcuts[name].get(file_)
+    #else:
+        #values = {**shortcuts[name].get(f) for f in file_}
     return values
 
 

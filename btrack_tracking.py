@@ -1,13 +1,15 @@
 import btrack
 from btrack.constants import BayesianUpdates
 from btrack.dataio import localizations_to_objects
+import dask.array as da
+from data_io import single_zarr
 import napari
 import numpy as np
 import os
 import pandas as pd
 from pathlib import Path
-from parser import custom_parser, hardcoded_paths
-from view_tracks import get_stack, get_tracks, base, get_paths
+from _parser import custom_parser, get_paths, track_view_base
+from view_tracks import get_tracks
 
 local_dir = os.path.realpath(__file__)
 local_dir = str(Path(local_dir).root)
@@ -65,6 +67,22 @@ def track(
     return tracks
 
 
+# Wrapper
+# -------
+def track_objects(df, shape, max_search_radius=25, config_name='platelet_config.json'):
+    objects_to_track, config_path = read_to_track(df, config_name=config_name)
+    tracks = track(
+                   objects_to_track, 
+                   config_path, 
+                   shape, 
+                   max_search_radius=max_search_radius
+                   )
+    tracks_df = convert_to_df(tracks)
+    return tracks_df
+
+
+# Execution
+# ---------
 if __name__ == "__main__":
 
     # Parser
@@ -80,7 +98,9 @@ if __name__ == "__main__":
       
     # Data
     # ----
-    arr, shape = get_stack(paths['data_path'], w_shape=True)
+    #arr, shape = get_stack(paths['data_path'], w_shape=True)
+    arr = single_zarr(paths['data_path'])
+    shape = arr.shape
     df = pd.read_csv(paths['coords_path'])
 
     # Btrack io

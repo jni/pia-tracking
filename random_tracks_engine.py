@@ -4,9 +4,9 @@ import napari
 import numpy as np
 import os
 import pandas as pd 
-from parser import custom_parser, hardcoded_paths
+from _parser import custom_parser, get_paths
 import time
-from view_tracks import get_stack, get_tracks, base, get_paths
+from view_tracks import get_tracks, track_view_base
 import zarr
 
 
@@ -490,7 +490,9 @@ def get_random_tracks(paths, prefix, n=10, t_max=193):
 def read_data(paths, t_max=193):
     df = pd.read_csv(paths['tracks_path'])
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-    arr, shape = get_stack(paths['data_path'], t_max=t_max, w_shape=True)
+    #arr, shape = get_stack(paths['data_path'], t_max=t_max, w_shape=True)
+    arr = da.from_zarr(paths['data_path'])
+    shape = arr.shape
     return df, arr, shape
 
 
