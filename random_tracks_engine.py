@@ -1,12 +1,13 @@
 import dask.array as da
+from data_io import single_zarr
 from itertools import repeat
 import napari
 import numpy as np
 import os
 import pandas as pd 
-from _parser import custom_parser, get_paths
+from _parser import custom_parser, get_paths, track_view_base
 import time
-from view_tracks import get_tracks, track_view_base
+from view_tracks import get_tracks
 import zarr
 
 
@@ -491,7 +492,7 @@ def read_data(paths, t_max=193):
     df = pd.read_csv(paths['tracks_path'])
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     #arr, shape = get_stack(paths['data_path'], t_max=t_max, w_shape=True)
-    arr = da.from_zarr(paths['data_path'])
+    arr = single_zarr(paths['data_path'])
     shape = arr.shape
     return df, arr, shape
 
