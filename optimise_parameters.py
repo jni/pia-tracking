@@ -243,13 +243,3 @@ if __name__ == "__main__":
     study = optuna.create_study()
     study.optimize(objective, n_trials=3)
 
-def wrap(func, t=10):
-    def inner(*args, **kwargs):
-        print('wrapping')
-        return func(*args, **kwargs) * t
-    return inner
-
-@wrap
-@wrap
-def add0(a, b):
-    return a+b
