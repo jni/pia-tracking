@@ -69,8 +69,15 @@ def track(
 
 # Wrapper
 # -------
-def track_objects(df, shape, max_search_radius=25, config_name='platelet_config.json'):
-    objects_to_track, config_path = read_to_track(df, config_name=config_name)
+def track_objects(df, shape, max_search_radius=25, config_name='platelet_config.json', 
+                  t_x_y_z_id=['frame', 'x', 'y', 'z', 'pid'], 
+                  z_scale=4, 
+                  local_dir=local_dir):
+    objects_to_track, config_path = read_to_track(df, 
+                                                  config_name=config_name, 
+                                                  t_x_y_z_id=t_x_y_z_id, 
+                                                  z_scale=z_scale, 
+                                                  local_dir=local_dir)
     tracks = track(
                    objects_to_track, 
                    config_path, 

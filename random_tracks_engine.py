@@ -513,7 +513,7 @@ def view_random_tracks(tracks, array):
 # ---------
 if __name__ == "__main__":
     # parser
-    parser = custom_parser(tracks=True, save=True, base=base)
+    parser = custom_parser(tracks=True, save=True, base=track_view_base)
     args = parser.parse_args()
     paths = get_paths(args, 
                       __file__,

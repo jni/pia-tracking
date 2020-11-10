@@ -79,7 +79,7 @@ if __name__ == '__main__':
     # ----------------
     # construct dict with information for command line argument to 
     # interact with min_frames in get_tracks
-    parser = custom_parser(tracks=True, base=base)
+    parser = custom_parser(tracks=True, base=track_view_base)
     args_ = parser.parse_args()
     paths = get_paths(args_, __file__)
 
