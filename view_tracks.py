@@ -73,7 +73,6 @@ def save_tracks(tracks, name='tracks-for-napari.csv'):
     np.savetxt(name, tracks, delimiter=',')
 
 
-
 if __name__ == '__main__':
     # Construct Parser
     # ----------------
