@@ -14,6 +14,9 @@ from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
 import math
 from scipy.spatial.transform import Rotation as Rot
+import os
+import zarr
+import dask.array as da
 
 
 def get_datetime():
@@ -166,6 +169,9 @@ class IvmObjects:
     def __init__(self, conf):
         self.conf = conf
         self.inspect_steps = {}
+        self.labels = {}
+        self.labels_volume = None
+        self.nd2_file = None
     
     def add_nd2info(self, nd2info):
         self.conf['nd2info'] = dict_fix_numpy(nd2info.to_dict())
@@ -203,6 +209,8 @@ class IvmObjects:
             #v_labels = watershed(-v_dg, markers, mask=v_dg_th)
             v_labels = watershed(-v_dg, markers, mask=v_dg_th,compactness=1)
             self.inspect_steps[4] = dict(name = 'labels_volume', data = v_labels) 
+            #   add to labels dask array to list  
+            self.labels[frame] = da.array(v_labels)
 
             # extract info from labels
             labels_idx = np.arange(1, v_labels.max())
@@ -272,7 +280,7 @@ class IvmObjects:
 
         self.nd2_file = nd2_file
 
-
+        # Process according to the specified (or not) method
         if self.conf['process_type'] == 'multi_thread':
             with ThreadPoolExecutor(max_workers=self.conf['multi_workers'] ) as executor:
                 futures = executor.map(self._process_frame, frames)
@@ -287,7 +295,8 @@ class IvmObjects:
             df_obj_frames = list(map(self._process_frame, frames))
 
         df_obj = pd.concat(df_obj_frames, ignore_index=True, axis=0)
-        
+        # save out the labels
+        self._save_labels(frames)
         #post process dataframe
         df_obj['zf'] = df_obj['zs'] - np.percentile(df_obj['zs'], 2)
         df_obj.insert(0, 'pid',  df_obj.reset_index()['index'])
@@ -295,4 +304,44 @@ class IvmObjects:
         print('OK')
         print('Processed in {0:.2f} seconds. Found {1:} platelets.'.format((time.time()-starttime), len(df_obj.index)))
         return df_obj
+    
+
+    def _save_labels(self, frames):
+        """
+        Save the labels as a zarr file in the data directory
+        """
+        # get file name and path
+        name = Path(self.nd2_file).stem
+        data_path = Path(self.nd2_file).parents[0]
+        lab_path = os.path.join(data_path, name + '_labels.zarr')
+
+        # get the shape of the first frame
+        shape = self.labels[list(self.labels.keys())[0]].shape
+
+        # get the the number of frames
+        if isinstance(frames, range):
+            # e.g., range(0, 193) --> 194 frames
+            t = frames.stop + 1 - frames.start
+        else:
+            t = len(frames)
+
+        # instantiate zarr array
+        self.labels_volume = zarr.open_array(lab_path, 
+                                             mode='w', 
+                                             shape=(t, 
+                                                    shape[0], 
+                                                    shape[1], 
+                                                    shape[2]), 
+                                             chunks=(1, 
+                                                     shape[0], 
+                                                     shape[1], 
+                                                     shape[2]), 
+                                             dtype='i4',
+                                             fill_value=0)
+
+        # add frames to volume
+        for frame in frames:
+            self.labels_volume[frame, ...] = self.labels[frame]
+
+
 
