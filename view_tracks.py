@@ -3,42 +3,16 @@
 from dask import delayed
 import dask.array as da
 import napari
-from nd2reader import ND2Reader
 import numpy as np
 import os
 import pandas as pd
-from parser import custom_parser, hardcoded_paths
+from _parser import custom_parser, get_paths, track_view_base
 import time
-import toolz as tz
+from data_io import single_zarr
 
 
 # Functions
 # ---------
-def get_nd2_vol(nd2_data, c, frame):
-    nd2_data.default_coords['c']=c
-    nd2_data.bundle_axes = ('y', 'x', 'z')
-    v = nd2_data.get_frame(frame)
-    v = np.array(v)
-    return v
-
-
-def get_stack(data_path, object_channel=2, frame=70, t_max=193, w_shape=False):
-    nd2_data = ND2Reader(data_path)
-    nd2vol = tz.curry(get_nd2_vol)
-    fram = get_nd2_vol(nd2_data, object_channel, frame)
-    arr = da.stack(
-        [da.from_delayed(delayed(nd2vol(nd2_data, 2))(i),
-         shape=fram.shape,
-         dtype=fram.dtype)
-         for  i in range(t_max)]
-    )
-    shape = [t_max, ]
-    shape[1:] = fram.shape
-    if w_shape:
-        return arr, shape
-    else:
-        return arr
-
 
 def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
         coord_cols=('x', 'y', 'z'), scale=(1, 1, 1), w_prop=True):
@@ -99,48 +73,18 @@ def save_tracks(tracks, name='tracks-for-napari.csv'):
     np.savetxt(name, tracks, delimiter=',')
 
 
-def get_paths(
-              args,
-              __file, 
-              get={
-                  'data_path': 'image', 
-                  'tracks_path': 'tracks'
-              }
-                  ):
-    if args.name:
-        paths = hardcoded_paths(args.name, __file)
-    else:
-        args_ = vars(args)
-        paths = {
-            key : args_[get[key]] for key in get.keys
-        }
-    return paths
-
-# construct dict with information for command line argument to 
-# interact with min_frames in get_tracks
-h0 = "Minimum frames in which particles must appear to be "
-h1 = "visualised as tracks (default = 20)"
-base = {
-        'min_frames' : {
-            'name' :'--min_frames',
-            'help' : h0 + h1, 
-            'type' : int, 
-            'default' : 20
-        }
-}
-
 if __name__ == '__main__':
     # Construct Parser
     # ----------------
     # construct dict with information for command line argument to 
     # interact with min_frames in get_tracks
-    parser = custom_parser(tracks=True, base=base)
+    parser = custom_parser(tracks=True, base=track_view_base)
     args_ = parser.parse_args()
     paths = get_paths(args_, __file__)
 
     # Get Data
     # --------
-    arr = get_stack(paths['data_path'])
+    arr = single_zarr(paths['data_path'])
     df = pd.read_csv(paths['tracks_path'])
     if args_.min_frames: # this if else block is actually unneccessary, 
         # apparently I deeply distrust argparse's default =P

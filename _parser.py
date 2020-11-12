@@ -108,13 +108,26 @@ def parser_dict(image: bool=True,
     return parser_info
 
 
+# Specific Base Options
+# ---------------------
+h0 = "Minimum frames in which particles must appear to be "
+h1 = "visualised as tracks (default = 20)"
+track_view_base = {
+        'min_frames' : {
+            'name' :'--min_frames',
+            'help' : h0 + h1, 
+            'type' : int, 
+            'default' : 20
+        }
+}
+
 # Hacky Hardcoded Paths
 # ---------------------
 
 shortcuts = {
     'Abi' : {
         'view_tracks' : {
-            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.zarr',
             'tracks_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
         }, 
         'view_segmentation_3D' : {
@@ -122,9 +135,16 @@ shortcuts = {
         }, 
         'btrack_tracking' : {
             'save_path' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv", 
-            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.nd2',
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.zarr',
             'coords_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
-            }
+        },
+        'random_tracks_engine' : {
+            'save_dir' : "/Users/amcg0011/GitRepos/pia-tracking/20200918-130313", 
+            'data_path' : '/Users/amcg0011/Data/pia-tracking/200519_IVMTR69_Inj4_dmso_exp3.zarr',
+            'tracks_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/btrack-tracks.csv', 
+            'coords_path' : '/Users/amcg0011/GitRepos/pia-tracking/20200918-130313/tracks.csv'
+        }
+        
     },
     'Juan' : {
         'view_tracks' : {
@@ -139,14 +159,39 @@ shortcuts = {
 
 __file__var = str
 
-def hardcoded_paths(name: str, file_: __file__var, shortcuts=shortcuts
+def hardcoded_paths(name: str, file_: __file__var, by_name=False, shortcuts=shortcuts
                     ) -> Union[dict, str]:
     """
     get the variables for 
     """
-    file_path = os.path.realpath(file_)
-    file_name = str(Path(file_path).stem)
-    values = shortcuts[name].get(file_name)
+    if not by_name:
+        file_path = os.path.realpath(file_)
+        file_name = str(Path(file_path).stem)
+        values = shortcuts[name].get(file_name)
+    elif isinstance(file_, str):
+        values = shortcuts[name].get(file_)
+    #else:
+        #values = {**shortcuts[name].get(f) for f in file_}
     return values
+
+
+# Utilities
+# ---------
+
+def get_paths(
+              args,
+              file_, 
+              get={'data_path' : 'image', 
+                  'tracks_path' : 'tracks'}, 
+              by_name=False
+                  ):
+    if args.name:
+        paths = hardcoded_paths(args.name, file_, by_name=by_name)
+    else:
+        args_ = vars(args)
+        paths = {
+            key : args_[get[key]] for key in get.keys
+        }
+    return paths
 
     
