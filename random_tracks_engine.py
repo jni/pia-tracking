@@ -129,6 +129,10 @@ class RandomTracksEngine:
         self.tracks_list = []
         self.tracks_info = None
 
+        # add magnetude of displacement between time-ponts
+        # for each track vertex
+        self._add_disp_weights()
+
     # PROPERTIES
     # ==========
     # TODO add the hypercubes/trackslist/tracksinfo
@@ -194,9 +198,46 @@ class RandomTracksEngine:
     # PRIVATE METHODS
     # ===============
 
+    # Weights
+    # -------
+    def _add_disp_weights(self):
+        """
+        Get L2 norm of finite difference across x,y,z for each track point
+        These will be used as weights for random track selection.
+        """
+        coords = self.coords_cols
+        df = self.tracks
+        weights = []
+        for ID in list(df[self.id_col].unique()):
+            # get the finite difference for the position vars
+            diff = df.loc[(df[self.id_col] == ID)][coords].diff()
+            # the first value will be NaN - replace with the second
+            # so as not to disadvantage the first point in a track
+            #start = diff.index[0]
+            #if len(diff) >= 2: 
+               # for coord in coords:
+                     # assumes index is a range)
+                #    diff.loc[start, coord] = diff.loc[start + 1, coord]
+            #else: 
+               # for coord in coords:
+                 #   diff.loc[start, coord] = 0
+            # lazy way
+            diff = diff.fillna(0)
+            # generate L2 norms for the finite difference vectors  
+            n2 = list(np.linalg.norm(diff.to_numpy(), 2, axis=1))
+            weights.extend(n2)
+        v0 = len(weights)
+        v1 = len(df)
+        m = 'An issue has occured when calculating track displacements'
+        m = m + f': the length of the data frame ({v1}) does not equal '
+        m = m + f'that of the displacements ({v0})'
+        assert v0 == v1, m 
+        self.tracks['2-norm'] = weights
+
+
     # Random Tracks
     # -------------
-    def _grab_tracks(self, num_tracks):
+    def _grab_tracks(self, num_tracks, s=100):
         """
         select random tracks
         """
@@ -223,10 +264,11 @@ class RandomTracksEngine:
         #   (e.g., coords for 90% of frames)
         else:
             print(f'Sampling {num_tracks}...')
-            sample = df.sample(n=num_tracks)
+            w = df['2-norm'].values
+            sample = df.sample(n=num_tracks, weights=w, random_state=s)
             num_obtained = self._add_track_info(sample, df)
             num_tracks = num_tracks - num_obtained
-            return self._grab_tracks(num_tracks)
+            return self._grab_tracks(num_tracks, s=s+1)
 
 
     # referenced in self._grab_tracks()
@@ -433,9 +475,9 @@ class RandomTracksEngine:
                 n_min = coord + '_start'
                 s_max = s_.stop
                 n_max = coord + '_stop'
-                row[n_min] = [s_min,]
-                row[n_max] = [s_max,]
-            row['frames'] = [self._frames * 2 + 1,]
+                row.loc[:, n_min] = [s_min,]
+                row.loc[:, n_max] = [s_max,]
+            row.loc[:, 'frames'] = [self._frames * 2 + 1,]
             info.append(row)
         info = pd.concat(info)
         print(f'Track volume info obtained for {len(info)} tracks')
