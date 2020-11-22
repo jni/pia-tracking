@@ -214,7 +214,7 @@ class RandomTracksEngine:
             # the first value will be NaN - replace with the second
             # so as not to disadvantage the first point in a track
             #start = diff.index[0]
-            #if len(diff) >= 2: 
+            # if len(diff) >= 2: 
                # for coord in coords:
                      # assumes index is a range)
                 #    diff.loc[start, coord] = diff.loc[start + 1, coord]
@@ -519,9 +519,30 @@ class RandomTracksEngine:
 
 # The Wrapper 
 # -----------
-def get_random_tracks(paths, prefix, n=10, t_max=193):
+def get_random_tracks(
+                      paths, 
+                      prefix, 
+                      n=10, 
+                      t_max=193, 
+                      frames=10, 
+                      box=60,
+                      id_col='ID', 
+                      time_col='t', 
+                      array_order=('t', 'x', 'y', 'z'), 
+                      scale=(1, 1, 1, 4)
+                      ):
     df, array, shape = read_data(paths, t_max=t_max)
-    RTE = RandomTracksEngine(df, array, shape)
+    RTE = RandomTracksEngine(
+                             df, 
+                             array, 
+                             shape, 
+                             frames=frames, 
+                             box=box,
+                             id_col=id_col, 
+                             time_col=time_col, 
+                             array_order=array_order, 
+                             scale=scale
+                             )
     hcs, tracks = RTE.add_tracks(n)
     print(type(tracks), len(tracks))
     RTE.save(prefix, paths['save_dir'])

@@ -190,7 +190,7 @@ def get_paths(
     else:
         args_ = vars(args)
         paths = {
-            key : args_[get[key]] for key in get.keys
+            key : args_[get[key]] for key in get.keys()
         }
     return paths
 
