@@ -9,6 +9,8 @@ import numpy as np
 import os
 from _parser import custom_parser, get_paths
 from pathlib import Path
+import tensorstore as ts
+from tensorstore import TensorStore
 import toolz as tz
 import zarr
 
@@ -162,22 +164,75 @@ def _set_val(i, key, md):
     return md
 
 
-# Read 1 Channel of Zarr
+# Zarr via dask
 # ----------------------
-def single_zarr(input_path, c=2):
+def single_zarr(input_path, c=2, idx=0):
+    '''
+    Parameters
+    ----------
+    c: int or tuple
+        Index of indices to return in array
+    idx: int or tuple
+        which indicies of the dim to apply c to
+    '''
+    assert type(c) == type(idx)
     arr = da.from_zarr(input_path)
-    arr = arr[c]
+    slices = [slice(None)] * arr.ndim
+    if isinstance(idx, int):
+        slices[idx] = c
+    elif isinstance(idx, tuple):
+        for i, ind in enumerate(idx):
+            slices[ind] = c[i]
+    else:
+        raise TypeError('c and idx must be int or tuple with same type')
+    slices  = tuple(slices)
+    arr = arr[slices]
     return arr
 
-
-# Sanity Check
-# ------------
 
 def view_zarr(input_path, scale=(1, 1, 1, 1, 4)):
     arr = da.from_zarr(input_path)
     with napari.gui_qt():
         viewer = napari.Viewer() 
         viewer.add_image(arr, name='all_channels', scale=scale)
+
+
+# Zarr via tensorstore
+# --------------------
+
+#def shape(tsobj):
+    #open_spec = tsobj.spec().to_json()
+    # Tensorstore input_exclusive_max may have mixed list and int elements
+    #input_exc_max = flatten_list(open_spec['transform']['input_exclusive_max'], [])
+    #input_exc_max = np.array(input_exc_max)
+    #input_inc_min = np.array(open_spec['transform']['input_inclusive_min'])
+    #s = input_exc_max - input_inc_min
+    #return s
+
+
+#def flatten_list(x, final):
+    #"""
+   # Tensorstore input_exclusive_max may have mixed lists
+   # """
+    #for item in x:
+    #    if isinstance(item, list):
+       #     flatten_list(item, final)
+      #  else:
+     #     final.append(item)
+    #return final
+
+
+#def ndim(tsobj):
+   # return len(shape(tsobj))
+
+
+#def hacky_ts_zarr_open(open_spec):
+    #TensorStore.shape = property(shape)
+    #TensorStore.ndim = property(ndim)
+   # TensorStore.copy = TensorStore.__array__
+    #arr = ts.open(open_spec, create=False, open=True).result()
+   # return arr
+
 
 
 # Save ND2 2 Zarr
