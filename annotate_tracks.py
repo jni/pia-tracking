@@ -36,16 +36,16 @@ class TrackViewer:
         self.i = None
         self.current = None
 
-        # Assign Vals
-        # -----------
-        self._data = self._set_data(hypercubes, tracks_list, df)
-        self.im_scale = im_scale
-        
         # Column names
         # ------------
         self.id_col = id_col
         self.time_col = time_col
         self.out_col = out_col
+
+        # Assign Vals
+        # -----------
+        self._data = self._set_data(hypercubes, tracks_list, df)
+        self.im_scale = im_scale
 
         # Save
         # ----
@@ -78,7 +78,6 @@ class TrackViewer:
         if df is not None:
             self._initialise_current()
         self._data = self.array, self.tracks, self.df
-        print(type(self.array), type(self.tracks), type(self.df))
         return self._data
 
     def _initialise_current(self):
@@ -270,7 +269,6 @@ class CostEvaluation(TrackViewer):
                                       self.shape)
         hcs, random_tracks = self.RTE.add_tracks(30)
         info = self.RTE.tracks_info
-        print(type(hcs), type(random_tracks), type(info))
         self.data = hcs, random_tracks, info
         self.annotate()
         self.cost = 1 - self.score
