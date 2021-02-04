@@ -1,13 +1,14 @@
 import dask.array as da
 from data_io import single_zarr
 from itertools import repeat
+import json
 import napari
 import numpy as np
 import os
 import pandas as pd 
 from _parser import custom_parser, get_paths, track_view_base
 import time
-from view_tracks import get_tracks
+from view_tracks import get_tracks, add_track_length
 import zarr
 
 
@@ -19,15 +20,17 @@ class RandomTracksEngine:
     def __init__(self, 
                  tracks,
                  array, 
-                 shape,
-                 t_max=193,
                  frames=10, 
                  box=60,
                  id_col='ID', 
                  time_col='t', 
                  array_order=('t', 'x', 'y', 'z'), 
                  scale=(1, 1, 1, 4), 
-                **kwargs 
+                 seed=None,
+                 weighted=False,
+                 max_lost_prop=None,
+                 min_frames=20,
+                 **kwargs 
                 ):
         '''
         Class for obtaining samples of random tracks 
@@ -35,11 +38,11 @@ class RandomTracksEngine:
         Parameters
         ----------
         tracks: pd.DataFrame
-            .
-        array: da.stack
-            .
+            data frame containing the track vertices
+        array: dask array
+            image from which to obtain track hypercubes
         frame_shape: tuple of int
-            .
+            what is the shape of a single frame
         t_max: int
             .
         frames: int
@@ -73,8 +76,14 @@ class RandomTracksEngine:
         This will need finessing as I find out what is 
         necessary for tracks appraisal.
         '''
+        shape = array.shape
+        t_max = array.shape[0]
+
         # Data
         # ----
+        tracks = add_track_length(tracks, id_col, new_col='track_length') 
+        if min_frames is not None:
+            tracks = tracks.loc[tracks['track_length'] >= min_frames, :]
         self.tracks = tracks # tracks data frame
         self.array = array # image array
 
@@ -87,6 +96,7 @@ class RandomTracksEngine:
                         for i, s in enumerate(shape)]
         self.scaled_shape = scaled_shape
         self.image_scale = scale
+        
 
         # Tracks Information
         # ------------------
@@ -133,6 +143,17 @@ class RandomTracksEngine:
         # for each track vertex
         self._add_disp_weights()
 
+        # Random tracks finding
+        # ---------------------
+        self.seed = seed
+        if self.seed is None:
+            self.seed = np.random.randint(0, 100_000)
+        self.weighted = weighted
+        if max_lost_prop is None:
+            max_lost_prop = 1.0
+        self.max_lost_prop = max_lost_prop
+
+
     # PROPERTIES
     # ==========
     # TODO add the hypercubes/trackslist/tracksinfo
@@ -148,9 +169,9 @@ class RandomTracksEngine:
     # -------------
     def add_tracks(self, num_tracks=10):
         '''
-        TODO: add tracks info df - this will record Y/N annotation
+        Add random tracks
         '''
-        pairs = self._grab_tracks(num_tracks)
+        pairs = self._grab_tracks(num_tracks, self.seed)
         print(f'Total tracks: {len(pairs)}')
         array = self._grab_hypercubes(pairs)
         tracks_list = self._list_of_tracks(pairs)
@@ -165,7 +186,8 @@ class RandomTracksEngine:
         else:
             hc = np.concatenate([self.hypercubes, array])
             self.hypercubes = hc
-        self.tracks_list.append(tracks_list)
+        for t in tracks_list:
+            self.tracks_list.append(t)
         if self.tracks_info is None:
             self.tracks_info = tracks_info
         else:
@@ -181,12 +203,11 @@ class RandomTracksEngine:
         save_path = os.path.join(save_dir, prefix + '.zarr')
         zarr.save(save_path, self.hypercubes)
         # save the tracks data
-        save_path = os.path.join(save_dir, prefix + '.npy')
-        arr = []
-        for t in self.tracks_list:
-            arr.append([t])
-        arr = np.concatenate(arr)
-        np.save(save_path, arr, allow_pickle=False)
+        save_path = os.path.join(save_dir, prefix + '.json')
+        tracks_out = {i : t.tolist() for i, t in enumerate(self.tracks_list)}
+        with open(save_path, 'w') as f:
+            op = json.dumps(tracks_out, indent=4)
+            f.write(op)
         # save tracks info
         save_path = os.path.join(save_dir, prefix + '.csv')
         self.tracks_info.to_csv(save_path)
@@ -237,7 +258,7 @@ class RandomTracksEngine:
 
     # Random Tracks
     # -------------
-    def _grab_tracks(self, num_tracks, s=100):
+    def _grab_tracks(self, num_tracks, s):
         """
         select random tracks
         """
@@ -260,11 +281,13 @@ class RandomTracksEngine:
         # If we don't get enough samples 
         #   (e.g., chooses a time point too near start or end)
         #   the function will call itself (with remainder samples to obtain)
-        # NOTE: not sure if should accept partial tracks 
-        #   (e.g., coords for 90% of frames)
+        # NOTE: the max proportion of frames that can be lost in the track can be set 
         else:
             print(f'Sampling {num_tracks}...')
-            w = df['2-norm'].values
+            if self.weighted:
+                w = df['2-norm'].values
+            else:
+                w = None
             sample = df.sample(n=num_tracks, weights=w, random_state=s)
             num_obtained = self._add_track_info(sample, df)
             num_tracks = num_tracks - num_obtained
@@ -283,7 +306,8 @@ class RandomTracksEngine:
                 (tdf[self.time_col] >= t - self._frames) & 
                 (tdf[self.time_col] <= t + self._frames)
                 ]
-            right_len = len(df) == self._frames * 2 + 1
+            right_len = len(df) >= np.floor((1-self.max_lost_prop) * (self._frames * 2 + 1))
+            right_len = right_len and len(df) <= self._frames * 2 + 1
             new_pair = pair not in self.random_tracks.keys()
             row = tdf.loc[(tdf[self.id_col]==pair[0]) & 
                          (tdf[self.time_col]==pair[1])]
@@ -318,11 +342,11 @@ class RandomTracksEngine:
 
     # referenced in self._estimate_bounding_boxes()
     def _time_slice(self, df, pair):
-        t_min, t_max = df[self.time_col].min(), df[self.time_col].max() + 1
+        t_min, t_max = pair[1] - self._frames, pair[1] + self._frames
         df[self.time_col] = df[self.time_col] - t_min 
         self.random_tracks[pair]['b_box'] = {self.time_col : slice(t_min, 
                                                                        t_max,)}
-        self.random_tracks[pair]['corr'][self.time_col] = slice(0, t_max)
+        self.random_tracks[pair]['corr'][self.time_col] = slice(0, self.hc_shape[0])
         return df
 
 
@@ -413,14 +437,18 @@ class RandomTracksEngine:
             dif = self.hc_shape[0]
             sub = []
             for i in range(dif):
-                frame = self.array[fs.start + i, ...].compute()
+                idx = fs.start + i
+                if idx >= self.t_max or idx < 0:
+                    frame = np.zeros(self.frame_shape)
+                else:
+                    frame = self.array[idx, ...].compute()
                 sub.append([frame])
             sub = np.concatenate(sub)
             s_ = [slices[coord] for coord in self.array_order]
             s_[0] = slice(0, dif)
             s_ = tuple(s_)
             sml_sub = sub[s_]
-            sml_arr = self._correct_shape(self.hc_shape, sml_sub, pair)
+            sml_arr = self._correct_shape(sml_sub, pair)
             arrays.append([sml_arr])
         arrays = np.concatenate(arrays)
         t1 = time.time()
@@ -429,13 +457,13 @@ class RandomTracksEngine:
         
 
     # referenced in self._get_arrays()
-    def _correct_shape(self, shape, sub, pair):
+    def _correct_shape(self, sub, pair):
         corr = self.random_tracks[pair]['corr']
         slice_ = []
         for coord in self.array_order:
             slice_.append(corr[coord])
         slice_ = tuple(slice_)
-        arr = np.zeros(shape, dtype=sub.dtype)
+        arr = np.zeros(self.hc_shape, dtype=sub.dtype)
         arr[slice_] = sub
         return arr
 
@@ -447,16 +475,12 @@ class RandomTracksEngine:
         track_list = []
         for pair in pairs:
             df = self.random_tracks[pair]['df']
-            ids = df[self.id_col].values
-            arrays = [[np.array(ids)], ]
-            for i in range(len(self.image_shape)):
-                col = self.array_order[i]
-                coord_arr = df[col].values
-                coord_arr = np.array(coord_arr)
-                arrays.append([coord_arr])
-            array = np.concatenate(arrays).T
-            track_list.append(array)
+            data_cols = [self.id_col, self.time_col] + list(self.coords_cols)
+            track_data = df[data_cols].to_numpy()
+            track_list.append(track_data)
+            print(type(track_data), track_data.shape)
         print(f'Data obtained for {len(track_list)} tracks')
+        print(type(track_list), len(track_list), type(track_list[0]))
         return track_list
 
 
@@ -469,6 +493,8 @@ class RandomTracksEngine:
             df = self.tracks
             row = df.loc[(df[self.id_col]==pair[0]) & 
                          (df[self.time_col]==pair[1])]
+            mean_l2n = self.random_tracks[pair]['df']['2-norm'].mean()
+            row['mean_2-norm'] = mean_l2n
             for coord in self.array_order:
                 s_ = self.random_tracks[pair]['b_box'][coord]
                 s_min = s_.start
@@ -529,35 +555,38 @@ def get_random_tracks(
                       id_col='ID', 
                       time_col='t', 
                       array_order=('t', 'x', 'y', 'z'), 
-                      scale=(1, 1, 1, 4)
+                      scale=(1, 1, 1, 4), 
+                      seed=None, 
+                      weighted=False, 
+                      max_lost_prop=0.1
                       ):
-    df, array, shape = read_data(paths, t_max=t_max)
+    df, array = read_data(paths)
     RTE = RandomTracksEngine(
                              df, 
                              array, 
-                             shape, 
                              frames=frames, 
                              box=box,
                              id_col=id_col, 
                              time_col=time_col, 
                              array_order=array_order, 
-                             scale=scale
+                             scale=scale, 
+                             seed=seed, 
+                             weighted=weighted, 
+                             max_lost_prop=max_lost_prop
                              )
     hcs, tracks = RTE.add_tracks(n)
-    print(type(tracks), len(tracks))
     RTE.save(prefix, paths['save_dir'])
     return hcs, tracks, RTE.tracks_info
 
 
 # Data IO
 # -------
-def read_data(paths, t_max=193):
+def read_data(paths):
     df = pd.read_csv(paths['tracks_path'])
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     #arr, shape = get_stack(paths['data_path'], t_max=t_max, w_shape=True)
     arr = single_zarr(paths['data_path'])
-    shape = arr.shape
-    return df, arr, shape
+    return df, arr
 
 
 # View Result
@@ -585,9 +614,9 @@ if __name__ == "__main__":
                            'save_dir':'save' 
                            })
     # random tracks
-    df, array, shape = read_data(paths)
+    df, array = read_data(paths)
     prefix = 'rand_tracks_0'
-    RTE = RandomTracksEngine(df, array, shape)
+    RTE = RandomTracksEngine(df, array)
     hcs, tracks = RTE.add_tracks(10)
     RTE.save(prefix, paths['save_dir'])
     view_random_tracks(tracks, hcs)
