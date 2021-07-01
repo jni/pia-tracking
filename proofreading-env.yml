@@ -1,0 +1,23 @@
+name: napari-proofreading
+channels:
+  - conda-forge
+dependencies:
+  - dask
+  - distributed
+  - magicgui=0.2.9
+  - napari
+  - pip
+  - python=3.9
+  - python.app
+  - pytorch=1.8.0
+  - pyyaml
+  - scikit-image=0.18.*
+  - scipy
+  - toolz
+  - tqdm
+  - zarr
+  - pip:
+    - tensorstore
+    - nd2-dask
+    - platelet-unet-watershed
+    - zarpaint
