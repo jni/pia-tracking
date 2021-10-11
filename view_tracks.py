@@ -49,7 +49,7 @@ def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
     dict(df_filtered): dict
         dict containing the properties for napari
     """
-    time_0 = time.time()
+
     id_array = df[id_col].to_numpy()
     track_count = np.bincount(id_array)
     df['track length'] = track_count[id_array]
@@ -58,12 +58,19 @@ def get_tracks(df, min_frames=20, id_col='particle', time_col='frame',
     data_cols = [id_col, time_col] + list(coord_cols)
     track_data = df_filtered[data_cols].to_numpy()
     track_data[:, -3:] *= scale
-    print(f'{np.sum(track_count >= min_frames)} tracks found in '
-          f'{time.time() - time_0} seconds')
+    print(f'{np.sum(track_count >= min_frames)} tracks found with '
+          f'>= {min_frames} vertices')
     if w_prop:
         return track_data, dict(df_filtered)
     else:
         return track_data
+
+
+def add_track_length(df, id_col, new_col='track_length'):
+    id_array = df[id_col].to_numpy()
+    track_count = np.bincount(id_array)
+    df[new_col] = track_count[id_array]
+    return df
 
 
 def save_tracks(tracks, name='tracks-for-napari.csv'):

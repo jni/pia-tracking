@@ -9,6 +9,7 @@ def custom_parser(image: bool=True,
                coords: bool=False,
                name: bool=True,
                save: bool=False, 
+               labels: bool=False,
                base: dict={} ) -> argparse.ArgumentParser:
     """
     Get an argument parser with some common arguments and, if you like, 
@@ -30,6 +31,7 @@ def custom_parser(image: bool=True,
                               name=name, 
                               coords=coords, 
                               save=save,
+                              labels=labels,
                               base=base)
     parser = get_parser(parser_info)
     return parser
@@ -62,6 +64,7 @@ def parser_dict(image: bool=True,
                coords: bool=False,
                name: bool=True, 
                save: bool=False,
+               labels: bool=False,
                base: dict={} ) -> Dict[Union[str], dict]:
     """
     Produce a dictionary with parser information. Can be provided with a base
@@ -101,10 +104,20 @@ def parser_dict(image: bool=True,
     if save:
         arg = 'save'
         name = ['-s','--save']
+        h = 'Input path to which to save output'
         default = 'btrack_tracks.csv'
         parser_info[arg] = {'name': name, 
                             'help': h, 
                             'default': default}
+    
+    if labels:
+        arg = 'labels'
+        name = ['-l','--labels']
+        h = 'Input a path at which to find labels file'
+        parser_info[arg] = {'name': name, 
+                            'help': h, 
+                            'default': default}
+
     return parser_info
 
 

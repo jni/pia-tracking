@@ -1,3 +1,4 @@
+from _parser import custom_parser, get_paths
 from dask import delayed
 import dask.array as da
 from datetime import datetime
@@ -7,7 +8,7 @@ import napari
 from nd2reader import ND2Reader
 import numpy as np
 import os
-from _parser import custom_parser, get_paths
+import pandas as pd
 from pathlib import Path
 import tensorstore as ts
 from tensorstore import TensorStore
@@ -63,9 +64,9 @@ def _nd2_2_zarr(data_path):
     save_path = os.path.join(str(input_path.parent), 
                              str(input_path.stem) + '.json')
     if not os.path.exists(save_path):
-        md = _dict_2_JSON_serializable(meta)
+        md = dict_2_JSON_serializable(meta)
         with open(save_path, 'w') as outfile:
-            json.dump(md, outfile, indent=True)                      
+            json.dump(md, outfile, indent=4)                      
 
 
 # Read ND2
@@ -106,7 +107,7 @@ def get_stack(nd2_data, c=2, frame=0, t_max=193, w_shape=False):
 # Metadata to JSON
 # ----------------
 
-def _dict_2_JSON_serializable(meta):
+def dict_2_JSON_serializable(meta):
     """""
     Convert ND2 metadata dict items to JSON serialisable form
 
@@ -159,6 +160,14 @@ def _set_val(i, key, md):
         md[key] = [i.stop]
     elif isinstance(i, np.ndarray):
         md[key] = i.tolist()
+    elif isinstance(i, pd.DataFrame):
+        i = i.astype(int, errors='ignore')
+        md[key] = i.to_dict()
+    elif isinstance(i, slice):
+        md[key] = [i.start, i.stop, i.step]
+    elif type(i) in (np.int16, np.int32, np.int64, np.int8):
+        md[key] = int(i)
+        print(type(i))
     else:
         md[key] = i
     return md
